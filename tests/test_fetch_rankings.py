@@ -48,6 +48,11 @@ class ParseRankingsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not found"):
             fetch_rankings.parse_rankings("Last 12 months")
 
+    def test_rejects_encoded_markup_in_a_distribution_name(self):
+        document = ranking_document().replace("Distro 1", "&lt;img src=/tmp/payload&gt;")
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            fetch_rankings.parse_rankings(document)
+
 
 class CacheTests(unittest.TestCase):
     def test_successful_fetch_updates_cache(self):
@@ -76,6 +81,51 @@ class CacheTests(unittest.TestCase):
         self.assertTrue(payload["stale"])
         self.assertEqual(payload["rankings"], rankings)
         self.assertEqual(payload["error"], "offline")
+
+    def test_cache_read_rejects_a_symlink(self):
+        rankings = fetch_rankings.parse_rankings(ranking_document())
+        cached = {"rankings": rankings, "updatedAt": 1234, "stale": False, "error": ""}
+        with tempfile.TemporaryDirectory() as directory:
+            target_path = os.path.join(directory, "target.json")
+            cache_path = os.path.join(directory, "rankings.json")
+            fetch_rankings.write_cache(target_path, cached)
+            os.symlink(target_path, cache_path)
+
+            self.assertIsNone(fetch_rankings.load_cache(cache_path))
+
+    def test_cache_read_rejects_an_oversized_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = os.path.join(directory, "rankings.json")
+            with open(cache_path, "wb") as cache_file:
+                cache_file.write(b" " * (fetch_rankings.MAX_CACHE_BYTES + 1))
+
+            self.assertIsNone(fetch_rankings.load_cache(cache_path))
+
+    def test_cache_read_rejects_a_file_owned_by_another_uid(self):
+        rankings = fetch_rankings.parse_rankings(ranking_document())
+        cached = {"rankings": rankings, "updatedAt": 1234, "stale": False, "error": ""}
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = os.path.join(directory, "rankings.json")
+            fetch_rankings.write_cache(cache_path, cached)
+            with mock.patch.object(fetch_rankings.os, "getuid", return_value=os.getuid() + 1):
+                self.assertIsNone(fetch_rankings.load_cache(cache_path))
+
+
+class UiSafetyTests(unittest.TestCase):
+    def test_remote_text_surfaces_are_plain_text(self):
+        panel_path = os.path.join(PLUGIN_DIR, "Panel.qml")
+        with open(panel_path, "r", encoding="utf-8") as panel_file:
+            panel = panel_file.read()
+
+        name_binding = "text: rankingRow.modelData.name\n                                    textFormat: Text.PlainText"
+        rank_binding = "text: rankingRow.modelData.rank\n                                    textFormat: Text.PlainText"
+        hpd_binding = "text: rankingRow.modelData.hpd\n                                    textFormat: Text.PlainText"
+        error_binding = 'text: root.rankings.length > 0 ? "Offline · showing cached rankings" : root.error\n                        textFormat: Text.PlainText'
+        self.assertIn(name_binding, panel)
+        self.assertIn(rank_binding, panel)
+        self.assertIn(hpd_binding, panel)
+        self.assertIn(error_binding, panel)
+        self.assertNotIn('"#1 " + rankings[0].name', panel)
 
 
 if __name__ == "__main__":

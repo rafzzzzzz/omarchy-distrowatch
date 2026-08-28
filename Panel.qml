@@ -25,9 +25,7 @@ Panel {
     readonly property string pageUrl: "https://distrowatch.com/dwres.php?resource=popularity"
     readonly property string helperPath: String(Qt.resolvedUrl("fetch_rankings.py")).replace(/^file:\/\//, "")
     readonly property string cachePath: Quickshell.env("HOME") + "/.cache/omarchy/distrowatch-rankings.json"
-    readonly property string tooltipText: rankings.length > 0
-        ? "#1 " + rankings[0].name + " · " + rankings[0].hpd + " HPD"
-        : "DistroWatch Page Hit Ranking"
+    readonly property string tooltipText: "DistroWatch Page Hit Ranking"
 
     function openFromHotkey() {
         root.controller.show();
@@ -353,6 +351,7 @@ Panel {
                                 Text {
                                     width: root.rankColumnWidth
                                     text: rankingRow.modelData.rank
+                                    textFormat: Text.PlainText
                                     color: rankingRow.index === 0 ? Color.accent : Qt.darker(root.bar.foreground, 1.35)
                                     font.family: root.bar.fontFamily
                                     font.pixelSize: Style.font.body
@@ -363,6 +362,7 @@ Panel {
                                 Text {
                                     width: parent.width - root.rankColumnWidth - root.hpdColumnWidth - root.trendColumnWidth
                                     text: rankingRow.modelData.name
+                                    textFormat: Text.PlainText
                                     color: root.bar.foreground
                                     font.family: root.bar.fontFamily
                                     font.pixelSize: Style.font.body
@@ -374,6 +374,7 @@ Panel {
                                 Text {
                                     width: root.hpdColumnWidth
                                     text: rankingRow.modelData.hpd
+                                    textFormat: Text.PlainText
                                     horizontalAlignment: Text.AlignRight
                                     color: root.bar.foreground
                                     font.family: root.bar.fontFamily
@@ -384,6 +385,7 @@ Panel {
                                 Text {
                                     width: root.trendColumnWidth
                                     text: root.trendGlyph(rankingRow.modelData.trend)
+                                    textFormat: Text.PlainText
                                     horizontalAlignment: Text.AlignRight
                                     color: root.trendColor(rankingRow.modelData.trend)
                                     font.family: root.bar.fontFamily
@@ -420,6 +422,7 @@ Panel {
                         width: parent.width - Style.space(32)
                         x: Style.space(16)
                         text: root.rankings.length > 0 ? "Offline · showing cached rankings" : root.error
+                        textFormat: Text.PlainText
                         color: root.bar.urgent
                         font.family: root.bar.fontFamily
                         font.pixelSize: Style.font.bodySmall

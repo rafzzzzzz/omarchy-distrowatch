@@ -3,6 +3,7 @@ import html
 import json
 import os
 import re
+import stat
 import sys
 import tempfile
 import time
@@ -11,6 +12,7 @@ import urllib.request
 
 URL = "https://distrowatch.com/dwres.php?resource=popularity"
 MAX_RESPONSE_BYTES = 1024 * 1024
+MAX_CACHE_BYTES = 64 * 1024
 MAX_RANKINGS = 20
 
 
@@ -34,13 +36,14 @@ def parse_rankings(document):
     for match in row_pattern.finditer(section):
         rank, href, raw_name, hits, trend = match.groups()
         name = html.unescape(re.sub(r"<[^>]+>", "", raw_name)).strip()
+        name_match = re.fullmatch(r"[A-Za-z0-9][-A-Za-z0-9 .,_+!()'/:?]{0,79}", name)
         slug_match = re.fullmatch(r"/?([a-zA-Z0-9_-]+)", html.unescape(href))
-        if not name or not slug_match:
+        if not name_match or not slug_match:
             continue
         rankings.append(
             {
                 "rank": int(rank),
-                "name": name[:80],
+                "name": name,
                 "hpd": int(hits.replace(",", "")),
                 "trend": trend_names[trend],
                 "url": "https://distrowatch.com/" + slug_match.group(1),
@@ -70,13 +73,37 @@ def fetch_rankings():
 
 
 def load_cache(path):
+    descriptor = None
     try:
-        with open(path, "r", encoding="utf-8") as cache_file:
-            cached = json.load(cache_file)
+        descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_uid != os.getuid()
+            or metadata.st_size > MAX_CACHE_BYTES
+        ):
+            return None
+
+        chunks = []
+        remaining = MAX_CACHE_BYTES + 1
+        while remaining > 0:
+            chunk = os.read(descriptor, min(8192, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        raw_cache = b"".join(chunks)
+        if len(raw_cache) > MAX_CACHE_BYTES:
+            return None
+
+        cached = json.loads(raw_cache.decode("utf-8"))
         if isinstance(cached.get("rankings"), list) and cached["rankings"]:
             return cached
     except (OSError, ValueError, TypeError, AttributeError):
         pass
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
     return None
 
 
