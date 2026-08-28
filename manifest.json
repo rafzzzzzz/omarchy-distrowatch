@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.rafzzzzzz.distrowatch",
+  "name": "DistroWatch Rankings",
+  "version": "1.0.0",
+  "author": "Rafael Marques",
+  "license": "MIT",
+  "description": "DistroWatch Page Hit Ranking in the Omarchy bar",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "DistroWatch Rankings",
+    "description": "Top distributions by six-month DistroWatch page hits",
+    "category": "Information",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
