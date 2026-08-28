@@ -20,7 +20,7 @@ omarchy bar move io.github.rafzzzzzz.distrowatch --section right
 
 ## Usage
 
-Click the chart icon to open the ranking panel. Click a distribution to open its DistroWatch page. The header includes actions to refresh the data or open the full ranking page.
+Click the chart icon to open the ranking panel. Click a distribution to open its DistroWatch page. The header includes an action to refresh the data.
 
 Data refreshes when the plugin starts and every six hours. A failed request falls back to the last successful response and marks it as cached.
 
