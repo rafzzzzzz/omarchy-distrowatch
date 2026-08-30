@@ -6,6 +6,11 @@ A minimalist Omarchy bar widget for the [DistroWatch Page Hit Ranking](https://d
 
 The popup shows the top 20 distributions from DistroWatch's six-month table, including average hits per day (HPD) and the direction of each value compared with the previous day.
 
+## Development disclosure
+
+AI coding tools helped design, write, and review this project. I chose the
+requirements and remain responsible for the published code.
+
 ## Install
 
 ```sh
